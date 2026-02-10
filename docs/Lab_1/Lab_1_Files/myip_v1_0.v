@@ -185,7 +185,7 @@ module myip_v1_0
 						else  // Next 4 elements go to B_RAM
 						begin
 							B_write_en <= 1;
-							B_write_address <= read_counter[B_depth_bits-1:0] - 2**A_depth_bits;
+							B_write_address <= (read_counter - 2**A_depth_bits);
 							B_write_data_in <= S_AXIS_TDATA[width-1:0];
 							A_write_en <= 0;
 						end
