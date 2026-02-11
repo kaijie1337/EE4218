@@ -129,7 +129,8 @@ module myip_v1_0
 	// Left as separate for ease of debugging
 	// Note: Using (N+1) ensures counter width can represent values from 0 up to and including N
 	// read_counter must count from 0 to NUMBER_OF_INPUT_WORDS-1
-	// write_counter must count from 0 to NUMBER_OF_OUTPUT_WORDS (note: up to N, not N-1, due to logic in Write_Outputs state)
+	// write_counter must count from 0 to NUMBER_OF_OUTPUT_WORDS (counts to N, not N-1)
+	//   This is because Write_Outputs uses an extra initial cycle for synchronous RAM read setup
 	reg [$clog2(NUMBER_OF_INPUT_WORDS + 1) - 1:0] read_counter;
 	reg [$clog2(NUMBER_OF_OUTPUT_WORDS + 1) - 1:0] write_counter;
 
