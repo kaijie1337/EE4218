@@ -50,8 +50,8 @@ module memory_RAM
 		 begin
 			if (write_en)
 				RAM[address] <= write_data_in;
-		 else
-			read_data_out <= RAM[address];
+			else
+				read_data_out <= RAM[address];
 		 end
 	end
 
