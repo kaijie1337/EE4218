@@ -127,6 +127,8 @@ module myip_v1_0
 	// Counters to store the number inputs read & outputs written.
 	// Could be done using the same counter if reads and writes are not overlapped (i.e., no dataflow optimization)
 	// Left as separate for ease of debugging
+	// Note: Using (N+1) ensures counters can hold values up to and including N
+	// read_counter needs to count 0 to 11 (12 values), write_counter needs to count 0 to 2 (3 values)
 	reg [$clog2(NUMBER_OF_INPUT_WORDS + 1) - 1:0] read_counter;
 	reg [$clog2(NUMBER_OF_OUTPUT_WORDS + 1) - 1:0] write_counter;
 
