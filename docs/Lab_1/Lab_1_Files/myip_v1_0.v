@@ -75,42 +75,42 @@ module myip_v1_0
 
 
 // RAM parameters for assignment 1
-	localparam A_depth_bits = 3;  	// 8 elements (A is a 2x4 matrix)
-	localparam B_depth_bits = 2; 	// 4 elements (B is a 4x1 matrix)
-	localparam RES_depth_bits = 1;	// 2 elements (RES is a 2x1 matrix)
+	localparam A_depth_bits = 3;  	// 2 ** 3 = 8 elements (A is a 2x4 matrix)
+	localparam B_depth_bits = 2; 	// 2 ** 2 = 4 elements (B is a 4x1 matrix)
+	localparam RES_depth_bits = 1;	// 2 ** 1 = 2 elements (RES is a 2x1 matrix)
 	localparam width = 8;			// all 8-bit data
 	
 // wires (or regs) to connect to RAMs and matrix_multiply_0 for assignment 1
 // those which are assigned in an always block of myip_v1_0 shoud be changes to reg.
-	wire	A_write_en;								// myip_v1_0 -> A_RAM. To be assigned within myip_v1_0. Possibly reg.
-	wire	[A_depth_bits-1:0] A_write_address;		// myip_v1_0 -> A_RAM. To be assigned within myip_v1_0. Possibly reg. 
-	wire	[width-1:0] A_write_data_in;			// myip_v1_0 -> A_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg		A_write_en;								// myip_v1_0 -> A_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg 	[A_depth_bits-1:0] A_write_address;		// myip_v1_0 -> A_RAM. To be assigned within myip_v1_0. Possibly reg. 
+	reg 	[width-1:0] A_write_data_in;			// myip_v1_0 -> A_RAM. To be assigned within myip_v1_0. Possibly reg.
 	wire	A_read_en;								// matrix_multiply_0 -> A_RAM.
 	wire	[A_depth_bits-1:0] A_read_address;		// matrix_multiply_0 -> A_RAM.
 	wire	[width-1:0] A_read_data_out;			// A_RAM -> matrix_multiply_0.
-	wire	B_write_en;								// myip_v1_0 -> B_RAM. To be assigned within myip_v1_0. Possibly reg.
-	wire	[B_depth_bits-1:0] B_write_address;		// myip_v1_0 -> B_RAM. To be assigned within myip_v1_0. Possibly reg.
-	wire	[width-1:0] B_write_data_in;			// myip_v1_0 -> B_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg 	B_write_en;								// myip_v1_0 -> B_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg		[B_depth_bits-1:0] B_write_address;		// myip_v1_0 -> B_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg		[width-1:0] B_write_data_in;			// myip_v1_0 -> B_RAM. To be assigned within myip_v1_0. Possibly reg.
 	wire	B_read_en;								// matrix_multiply_0 -> B_RAM.
 	wire	[B_depth_bits-1:0] B_read_address;		// matrix_multiply_0 -> B_RAM.
 	wire	[width-1:0] B_read_data_out;			// B_RAM -> matrix_multiply_0.
 	wire	RES_write_en;							// matrix_multiply_0 -> RES_RAM.
 	wire	[RES_depth_bits-1:0] RES_write_address;	// matrix_multiply_0 -> RES_RAM.
 	wire	[width-1:0] RES_write_data_in;			// matrix_multiply_0 -> RES_RAM.
-	wire	RES_read_en;  							// myip_v1_0 -> RES_RAM. To be assigned within myip_v1_0. Possibly reg.
-	wire	[RES_depth_bits-1:0] RES_read_address;	// myip_v1_0 -> RES_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg		RES_read_en;  							// myip_v1_0 -> RES_RAM. To be assigned within myip_v1_0. Possibly reg.
+	reg		[RES_depth_bits-1:0] RES_read_address;	// myip_v1_0 -> RES_RAM. To be assigned within myip_v1_0. Possibly reg.
 	wire	[width-1:0] RES_read_data_out;			// RES_RAM -> myip_v1_0
 	
 	// wires (or regs) to connect to matrix_multiply for assignment 1
-	wire	Start; 								// myip_v1_0 -> matrix_multiply_0. To be assigned within myip_v1_0. Possibly reg.
+	reg		Start; 								// myip_v1_0 -> matrix_multiply_0. To be assigned within myip_v1_0. Possibly reg.
 	wire	Done;								// matrix_multiply_0 -> myip_v1_0. 
 			
 				
 	// Total number of input data.
-	localparam NUMBER_OF_INPUT_WORDS  = 4; // 2**A_depth_bits + 2**B_depth_bits = 12 for assignment 1
+	localparam NUMBER_OF_INPUT_WORDS  = 12; // 2**A_depth_bits + 2**B_depth_bits = 12 for assignment 1
 
 	// Total number of output data
-	localparam NUMBER_OF_OUTPUT_WORDS = 4; // 2**RES_depth_bits = 2 for assignment 1
+	localparam NUMBER_OF_OUTPUT_WORDS = 2; // 2**RES_depth_bits = 2 for assignment 1
 
 	// Define the states of state machine (one hot encoding)
 	localparam Idle  = 4'b1000;
@@ -119,9 +119,10 @@ module myip_v1_0
 	localparam Write_Outputs  = 4'b0001;
 
 	reg [3:0] state;
+	reg [3:0] next_state;
 
-	// Accumulator to hold sum of inputs read at any point in time
-	reg [31:0] sum;
+	// Accumulator to hold product of inputs read at any point in time
+	// reg [31:0] sum;
 
 	// Counters to store the number inputs read & outputs written.
 	// Could be done using the same counter if reads and writes are not overlapped (i.e., no dataflow optimization)
@@ -133,12 +134,35 @@ module myip_v1_0
    // The sequence in which data are read in and written out should be
    // consistent with the sequence they are written and read in the driver's hw_acc.c file
 
-	always @(posedge ACLK) 
+	always @(*)
 	begin
+		case (state)
+			Idle: begin // wait for S_AXIS_TVALID to be 1 to start reading inputs
+				next_state = (S_AXIS_TVALID == 1) ? Read_Inputs : Idle;
+			end
+
+			Read_Inputs: begin
+				next_state = (read_counter == NUMBER_OF_INPUT_WORDS-1 && S_AXIS_TVALID == 1) ? Compute : Read_Inputs;
+			end
+
+			Compute: begin
+				next_state = Done ? Write_Outputs : Compute;
+			end
+
+			Write_Outputs: begin
+				next_state = (write_counter == NUMBER_OF_OUTPUT_WORDS-1 && M_AXIS_TREADY == 1) ? Idle : Write_Outputs;
+			end
+
+			default: next_state = Idle;
+		endcase
+	end
+
 	// implemented as a single-always Moore machine
 	// a Mealy machine that asserts S_AXIS_TREADY and captures S_AXIS_TDATA etc can save a clock cycle
 
-		/****** Synchronous reset (active low) ******/
+	always @(posedge ACLK) 
+	begin
+		// If reset asserted, go to Idle state.
 		if (!ARESETN)
 		begin
 			// CAUTION: make sure your reset polarity is consistent with the system reset polarity
@@ -146,69 +170,81 @@ module myip_v1_0
         end
 		else
 		begin
+			// Transition to next state every clock cycle
+			state <= next_state;
 			case (state)
-
 				Idle:
 				begin
 					read_counter 	<= 0;
 					write_counter 	<= 0;
-					sum          	<= 0;
+					A_write_en 		<= 0;
+					B_write_en 		<= 0;
+					RES_read_en 	<= 0;
+					Start 			<= 0;
 					S_AXIS_TREADY 	<= 0;
 					M_AXIS_TVALID 	<= 0;
 					M_AXIS_TLAST  	<= 0;
-					if (S_AXIS_TVALID == 1)
-					begin
-						state       	<= Read_Inputs;
-						S_AXIS_TREADY 	<= 1; 
-						// start receiving data once you go into Read_Inputs
-					end
+					if (S_AXIS_TVALID == 1) S_AXIS_TREADY <= 1;
 				end
 
-				Read_Inputs:
+				Read_Inputs: // Read inputs from AXI Stream and write to RAM A and B.
 				begin
+					// Assert S_AXIS_TREADY and check for S_AXIS_TVALID in each cycle to read data
 					S_AXIS_TREADY 	<= 1;
 					if (S_AXIS_TVALID == 1) 
 					begin
-						// Coprocessor function (adding the numbers together) happens here (partly)
-						sum  	<=	sum + S_AXIS_TDATA;
-						// If we are expecting a variable number of words, we should make use of S_AXIS_TLAST.
-						// Since the number of words we are expecting is fixed, we simply count and receive 
-						// the expected number (NUMBER_OF_INPUT_WORDS) instead.
+						// Read data in the order of A matrix followed by B matrix.
+						if(read_counter < NUMBER_OF_INPUT_WORDS) begin
+							if (read_counter < 2**A_depth_bits) 
+							begin
+								A_write_en <= 1;
+								B_write_en <= 0;
+								A_write_address <= read_counter;
+								A_write_data_in <= S_AXIS_TDATA;
+							end 
+							
+							else 
+							begin
+								A_write_en <= 0;
+								B_write_en <= 1;
+								B_write_address <= read_counter - 2**A_depth_bits; // account for the address offset for B matrix
+								B_write_data_in <= S_AXIS_TDATA;
+							end
+						end
+						
+						// Reset write enables after writing to avoid writing to the same address in subsequent cycles
 						if (read_counter == NUMBER_OF_INPUT_WORDS-1)
 						begin
-							state      		<= Compute;
-							S_AXIS_TREADY 	<= 0;
+							A_write_en <= 0;
+							B_write_en <= 0;
+							S_AXIS_TREADY <= 0; // stop reading more data
 						end
-						else
-						begin
-							read_counter 	<= read_counter + 1;
-						end
+
+						else read_counter <= read_counter + 1; // increment read counter if more data to read
 					end
 				end
             
 				Compute:
 				begin
-					// Coprocessor function to be implemented (matrix multiply) should be here. Right now, nothing happens here.
-					state		<= Write_Outputs;
-					// Possible to save a cycle by asserting M_AXIS_TVALID and presenting M_AXIS_TDATA just before going into 
-					// Write_Outputs state. However, need to adjust write_counter limits accordingly
-					// Alternatively, M_AXIS_TVALID and M_AXIS_TDATA can be asserted combinationally to save a cycle.
+					Start <= Done ? 0 : 1; // Start the multiplication if not done. Reset Start to 0 once done.
 				end
 			
 				Write_Outputs:
 				begin
 					M_AXIS_TVALID	<= 1;
-					M_AXIS_TDATA	<= sum + write_counter;
-					// Coprocessor function (adding 1 to sum in each iteration = adding iteration count to sum) happens here (partly)
+					if(write_counter < NUMBER_OF_OUTPUT_WORDS) begin
+						RES_read_en <= 1;
+						RES_read_address <= write_counter;
+						M_AXIS_TDATA <= RES_read_data_out; // present data read from RES_RAM to M_AXIS_TDATA
+					end
 					if (M_AXIS_TREADY == 1) 
 					begin
 						if (write_counter == NUMBER_OF_OUTPUT_WORDS-1)
 						begin
-							state	<= Idle;
 							M_AXIS_TLAST	<= 1;
 							// M_AXIS_TLAST, though optional in AXIS, is necessary in practice as AXI Stream FIFO and AXI DMA expects it.
 						end
-						else
+						else 
 						begin
 							write_counter	<= write_counter + 1;
 						end
